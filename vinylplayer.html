@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The JukeBox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono&display=swap" rel="stylesheet">
+    
+</head>
+<body>
+
+<!-- ── Logo ── -->
+<div class="logo-wrap">
+    <div class="logo-text">JUKEBOX</div>
+</div>
+
+<div class="layout">
+
+    <!-- ── Player ── -->
+    <div class="player">
+        <div class="vinyl-wrap">
+            <div class="vinyl-disc" id="vinyl">
+                <div class="vinyl-art">
+                    <img src="" alt="" id="cover-img" />
+                </div>
+                <div class="spindle"></div>
+            </div>
+            <div class="vinyl-glow" id="glow"></div>
+        </div>
+
+        <div class="track-info">
+            <div class="track-title" id="track-title">—</div>
+            <div class="track-artist" id="track-artist">select a track</div>
+        </div>
+
+        <div class="progress-wrap">
+            <div class="prog-row">
+                <span class="prog-time" id="time-cur">0:00</span>
+                <span class="prog-time" id="time-dur">0:00</span>
+            </div>
+            <input type="range" class="progress-bar" id="prog-bar" min="0" max="100" value="0" step="0.1" />
+        </div>
+
+        <div class="controls">
+            <button class="ctrl-btn" id="btn-prev">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/>
+                </svg>
+            </button>
+            <button class="ctrl-btn" id="btn-back">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 19 2 12 11 5 11 19"/><line x1="22" y1="5" x2="22" y2="19"/>
+                </svg>
+            </button>
+            <button class="ctrl-btn play-btn" id="btn-play">
+                <svg id="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                    <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+            </button>
+            <button class="ctrl-btn" id="btn-fwd">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 19 22 12 13 5 13 19"/><line x1="2" y1="5" x2="2" y2="19"/>
+                </svg>
+            </button>
+            <button class="ctrl-btn" id="btn-next">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="extras">
+            <button class="ctrl-btn mute-btn" id="btn-mute">
+                <svg id="icon-unmuted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <svg id="icon-muted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="volume-wrap">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="vol-icon">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            <div class="volume-track">
+                <div class="volume-fill" id="volume-fill"></div>
+                <input type="range" class="volume-bar" id="volume-bar" min="0" max="100" value="100" step="1" />
+            </div>
+            <span class="vol-pct" id="vol-pct">100</span>
+        </div>
+    </div>
+
+    <!-- ── Shelf ── -->
+    <div class="shelf-wrap">
+        <div class="shelf">
+            <div class="shelf-label">Library</div>
+            <div id="shelf-list"></div>
+        </div>
+        <button class="add-vinyl-btn" id="btn-add-vinyl">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Vinyl
+        </button>
+    </div>
+
+    <!-- ── Modal ── -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">New Vinyl</span>
+                <button class="modal-close" id="modal-close">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="field-group">
+                    <label class="field-label">Title</label>
+                    <input class="field-input" type="text" id="form-title" placeholder="Track title" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Artist</label>
+                    <input class="field-input" type="text" id="form-artist" placeholder="Artist name" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Track File</label>
+                    <div class="drop-zone" id="drop-track">
+                        <input type="file" id="file-track" accept="audio/*" style="display:none" />
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                        </svg>
+                        <span class="drop-label" id="drop-track-label">Drop .mp3 / .wav or click</span>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Cover Art</label>
+                    <div class="drop-zone" id="drop-cover">
+                        <input type="file" id="file-cover" accept="image/*" style="display:none" />
+                        <div class="drop-preview" id="cover-preview" style="display:none">
+                            <img id="cover-preview-img" src="" alt="" />
+                        </div>
+                        <svg id="drop-cover-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <span class="drop-label" id="drop-cover-label">Drop image or click</span>
+                    </div>
+                </div>
+                <div class="modal-error" id="modal-error"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel">Cancel</button>
+                <button class="btn-done" id="btn-done">Done</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+    // ── IndexedDB setup ──
+    const DB_NAME    = 'jukeboxDB';
+    const DB_VERSION = 1;
+    const STORE_TRACKS = 'tracks';
+    const STORE_FILES  = 'files';
+    let db = null;
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = e => {
+                const d = e.target.result;
+                if (!d.objectStoreNames.contains(STORE_TRACKS)) {
+                    d.createObjectStore(STORE_TRACKS, { keyPath: 'id' });
+                }
+                if (!d.objectStoreNames.contains(STORE_FILES)) {
+                    d.createObjectStore(STORE_FILES);
+                }
+            };
+            req.onsuccess = e => { db = e.target.result; resolve(db); };
+            req.onerror   = e => reject(e.target.error);
+        });
+    }
+
+    function dbPut(storeName, value, key) {
+        return new Promise((resolve, reject) => {
+            const tx  = db.transaction(storeName, 'readwrite');
+            const req = key !== undefined
+                ? tx.objectStore(storeName).put(value, key)
+                : tx.objectStore(storeName).put(value);
+            req.onsuccess = () => resolve();
+            req.onerror   = e => reject(e.target.error);
+        });
+    }
+
+    function dbGetAll(storeName) {
+        return new Promise((resolve, reject) => {
+            const tx  = db.transaction(storeName, 'readonly');
+            const req = tx.objectStore(storeName).getAll();
+            req.onsuccess = e => resolve(e.target.result);
+            req.onerror   = e => reject(e.target.error);
+        });
+    }
+
+    function dbGet(storeName, key) {
+        return new Promise((resolve, reject) => {
+            const tx  = db.transaction(storeName, 'readonly');
+            const req = tx.objectStore(storeName).get(key);
+            req.onsuccess = e => resolve(e.target.result);
+            req.onerror   = e => reject(e.target.error);
+        });
+    }
+
+    // ── Seed tracks (written into HTML) ──
+    const SEED_TRACKS = [
+        {
+            id: 1,
+            title: "Butterflies",
+            artist: "Brent Faiyaz",
+            src: "Butterflies.mp3",
+            cover: "Brent Faiyaz.jpeg"
+        },
+        {
+            id: 2,
+            title: "She",
+            artist: "Tyler, the Creator",
+            src: "She.mp3",
+            cover: "Goblin.jpeg"
+        }
+    ];
+
+    // ── Runtime track array (populated on load) ──
+    let TRACKS = [];
+
+    // ── State ──
+    let currentTrack = null;
+    let isMuted = false;
+
+    // ── DOM ──
+    const audio       = document.getElementById('audio');
+    const vinyl       = document.getElementById('vinyl');
+    const glow        = document.getElementById('glow');
+    const coverImg    = document.getElementById('cover-img');
+    const trackTitle  = document.getElementById('track-title');
+    const trackArtist = document.getElementById('track-artist');
+    const btnPlay     = document.getElementById('btn-play');
+    const iPlay       = document.getElementById('icon-play');
+    const iPause      = document.getElementById('icon-pause');
+    const progBar     = document.getElementById('prog-bar');
+    const timeCur     = document.getElementById('time-cur');
+    const timeDur     = document.getElementById('time-dur');
+    const shelfList   = document.getElementById('shelf-list');
+    const btnMute     = document.getElementById('btn-mute');
+    const iUnmuted    = document.getElementById('icon-unmuted');
+    const iMuted      = document.getElementById('icon-muted');
+
+    // ── Build a single shelf item ──
+    function addShelfItem(track) {
+        const item = document.createElement('div');
+        item.className = 'shelf-track';
+        item.dataset.id = track.id;
+        item.innerHTML = `
+            <div class="shelf-thumb">
+                <img src="${track.cover || ''}" alt="${track.title}" />
+            </div>
+            <div class="shelf-meta">
+                <div class="shelf-name">${track.title}</div>
+                <div class="shelf-artist">${track.artist}</div>
+            </div>
+        `;
+        item.addEventListener('click', () => loadTrack(track));
+        shelfList.appendChild(item);
+        shelfList.parentElement.scrollTop = shelfList.parentElement.scrollHeight;
+    }
+
+    // ── Bootstrap: open DB, merge seed + stored, render shelf ──
+    async function bootstrap() {
+        await openDB();
+
+        // Load any user-added tracks from DB
+        const stored = await dbGetAll(STORE_TRACKS);
+
+        // Merge: seed tracks first, then any stored that aren't already in seed
+        const seedIds = new Set(SEED_TRACKS.map(t => t.id));
+        const userTracks = stored.filter(t => !seedIds.has(t.id));
+
+        TRACKS = [...SEED_TRACKS, ...userTracks];
+
+        // For user tracks, resolve blob URLs for src and cover
+        for (const t of userTracks) {
+            if (t.srcKey) {
+                const blob = await dbGet(STORE_FILES, t.srcKey);
+                if (blob) t.src = URL.createObjectURL(blob);
+            }
+            if (t.coverKey) {
+                const blob = await dbGet(STORE_FILES, t.coverKey);
+                if (blob) t.cover = URL.createObjectURL(blob);
+            }
+        }
+
+        // Render shelf
+        TRACKS.forEach(addShelfItem);
+
+        // Load first track
+        loadTrack(TRACKS[0]);
+    }
+
+    // ── Load a track ──
+    function loadTrack(track) {
+        audio.pause();
+        currentTrack = track;
+
+        coverImg.style.opacity = '0';
+        setTimeout(() => {
+            coverImg.src = track.cover || '';
+            coverImg.alt = track.title;
+            coverImg.style.opacity = '1';
+        }, 200);
+
+        trackTitle.classList.remove('fade-in');
+        trackArtist.classList.remove('fade-in');
+        void trackTitle.offsetWidth;
+        trackTitle.textContent  = track.title;
+        trackArtist.textContent = track.artist;
+        trackTitle.classList.add('fade-in');
+        trackArtist.classList.add('fade-in');
+
+        audio.src = track.src;
+        audio.load();
+        audio.muted = isMuted;
+        progBar.value = 0;
+        timeCur.textContent = '0:00';
+        timeDur.textContent = '0:00';
+
+        document.querySelectorAll('.shelf-track').forEach(el => {
+            el.classList.toggle('active', parseInt(el.dataset.id) === track.id);
+        });
+
+        audio.addEventListener('canplay', function onCanPlay() {
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.play();
+        });
+    }
+
+    // ── Playback state ──
+    function setPlaying(playing) {
+        iPlay.style.display  = playing ? 'none'  : 'block';
+        iPause.style.display = playing ? 'block' : 'none';
+        vinyl.classList.toggle('playing', playing);
+        glow.style.opacity   = playing ? '1' : '0';
+    }
+
+    // ── Prev / Next helpers ──
+    function currentIndex() {
+        return TRACKS.findIndex(t => t.id === currentTrack?.id);
+    }
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+        const idx = currentIndex();
+        loadTrack(TRACKS[(idx - 1 + TRACKS.length) % TRACKS.length]);
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+        const idx = currentIndex();
+        loadTrack(TRACKS[(idx + 1) % TRACKS.length]);
+    });
+
+    // ── Mute toggle ──
+    btnMute.addEventListener('click', () => {
+        isMuted = !isMuted;
+        audio.muted = isMuted;
+        iUnmuted.style.display = isMuted ? 'none'  : 'block';
+        iMuted.style.display   = isMuted ? 'block' : 'none';
+        btnMute.style.color       = isMuted ? '#E8A020' : '';
+        btnMute.style.borderColor = isMuted ? 'rgba(232,160,32,0.7)' : '';
+    });
+
+    btnPlay.addEventListener('click', () => {
+        if (!audio.src) return;
+        audio.paused ? audio.play() : audio.pause();
+    });
+
+    audio.addEventListener('play',  () => setPlaying(true));
+    audio.addEventListener('pause', () => setPlaying(false));
+    audio.addEventListener('ended', () => {
+        const idx = currentIndex();
+        loadTrack(TRACKS[(idx + 1) % TRACKS.length]);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+        timeDur.textContent = fmt(audio.duration);
+        progBar.max = audio.duration;
+    });
+    audio.addEventListener('timeupdate', () => {
+        progBar.value = audio.currentTime;
+        timeCur.textContent = fmt(audio.currentTime);
+    });
+
+    progBar.addEventListener('input', () => { audio.currentTime = progBar.value; });
+
+    document.getElementById('btn-back').addEventListener('click', () => {
+        audio.currentTime = Math.max(0, audio.currentTime - 10);
+    });
+    document.getElementById('btn-fwd').addEventListener('click', () => {
+        audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10);
+    });
+
+    // ── Volume bar ──
+    const volumeBar  = document.getElementById('volume-bar');
+    const volumeFill = document.getElementById('volume-fill');
+    const volPct     = document.getElementById('vol-pct');
+
+    function setVolume(v) {
+        v = Math.max(0, Math.min(100, v));
+        audio.volume = v / 100;
+        volumeBar.value = v;
+        volumeFill.style.width = v + '%';
+        volPct.textContent = v;
+    }
+
+    volumeBar.addEventListener('input', () => setVolume(parseInt(volumeBar.value)));
+    setVolume(100);
+
+    document.addEventListener('keydown', e => {
+        if (e.code === 'Space')     { e.preventDefault(); btnPlay.click(); return; }
+        if (e.code === 'ArrowUp')   { e.preventDefault(); setVolume(Math.round(audio.volume * 100) + 5); }
+        if (e.code === 'ArrowDown') { e.preventDefault(); setVolume(Math.round(audio.volume * 100) - 5); }
+    });
+
+    function fmt(s) {
+        if (!isFinite(s)) return '0:00';
+        return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+    }
+
+    // ── Add Vinyl Modal ──
+    let formTrackFile = null;
+    let formCoverFile = null;
+    let formTrackURL  = null;
+    let formCoverURL  = null;
+
+    const overlay         = document.getElementById('modal-overlay');
+    const btnAddVinyl     = document.getElementById('btn-add-vinyl');
+    const btnModalClose   = document.getElementById('modal-close');
+    const btnCancel       = document.getElementById('btn-cancel');
+    const btnDone         = document.getElementById('btn-done');
+    const formTitle       = document.getElementById('form-title');
+    const formArtist      = document.getElementById('form-artist');
+    const modalError      = document.getElementById('modal-error');
+    const fileTrack       = document.getElementById('file-track');
+    const fileCover       = document.getElementById('file-cover');
+    const dropTrack       = document.getElementById('drop-track');
+    const dropCover       = document.getElementById('drop-cover');
+    const dropTrackLbl    = document.getElementById('drop-track-label');
+    const dropCoverLbl    = document.getElementById('drop-cover-label');
+    const coverPreview    = document.getElementById('cover-preview');
+    const coverPreviewImg = document.getElementById('cover-preview-img');
+    const dropCoverIcon   = document.getElementById('drop-cover-icon');
+
+    function openModal() {
+        formTitle.value = '';
+        formArtist.value = '';
+        formTrackFile = formCoverFile = formTrackURL = formCoverURL = null;
+        dropTrackLbl.textContent = 'Drop .mp3 / .wav or click';
+        dropCoverLbl.textContent = 'Drop image or click';
+        dropTrack.classList.remove('filled', 'drag-over');
+        dropCover.classList.remove('filled', 'drag-over');
+        coverPreview.style.display = 'none';
+        dropCoverIcon.style.display = 'block';
+        modalError.textContent = '';
+        overlay.classList.add('open');
+    }
+    function closeModal() { overlay.classList.remove('open'); }
+
+    btnAddVinyl.addEventListener('click', openModal);
+    btnModalClose.addEventListener('click', closeModal);
+    btnCancel.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+    dropTrack.addEventListener('click', () => fileTrack.click());
+    dropCover.addEventListener('click', () => fileCover.click());
+
+    fileTrack.addEventListener('change', () => { if (fileTrack.files[0]) setTrackFile(fileTrack.files[0]); });
+    fileCover.addEventListener('change', () => { if (fileCover.files[0]) setCoverFile(fileCover.files[0]); });
+
+    function setTrackFile(file) {
+        formTrackFile = file;
+        formTrackURL  = URL.createObjectURL(file);
+        dropTrackLbl.textContent = file.name;
+        dropTrack.classList.add('filled');
+    }
+    function setCoverFile(file) {
+        formCoverFile = file;
+        formCoverURL  = URL.createObjectURL(file);
+        coverPreviewImg.src = formCoverURL;
+        coverPreview.style.display = 'block';
+        dropCoverIcon.style.display = 'none';
+        dropCoverLbl.textContent = file.name;
+        dropCover.classList.add('filled');
+    }
+
+    function bindDrop(zone, onFile) {
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) onFile(file);
+        });
+    }
+    bindDrop(dropTrack, setTrackFile);
+    bindDrop(dropCover, setCoverFile);
+
+    // ── Submit: save blobs to IndexedDB, then add to UI ──
+    btnDone.addEventListener('click', async () => {
+        modalError.textContent = '';
+        const title  = formTitle.value.trim();
+        const artist = formArtist.value.trim();
+        if (!title)        { modalError.textContent = 'Title is required'; return; }
+        if (!artist)       { modalError.textContent = 'Artist is required'; return; }
+        if (!formTrackURL) { modalError.textContent = 'Please add a track file'; return; }
+
+        const newId   = TRACKS.length > 0 ? TRACKS[TRACKS.length - 1].id + 1 : 1;
+        const srcKey  = `src_${newId}`;
+        const coverKey = formCoverFile ? `cover_${newId}` : null;
+
+        // Persist blobs
+        await dbPut(STORE_FILES, formTrackFile, srcKey);
+        if (formCoverFile) await dbPut(STORE_FILES, formCoverFile, coverKey);
+
+        // Persist track metadata (store keys, not blob URLs)
+        const trackRecord = { id: newId, title, artist, srcKey, coverKey: coverKey || null };
+        await dbPut(STORE_TRACKS, trackRecord);
+
+        // Runtime track uses live blob URLs
+        const newTrack = {
+            id: newId, title, artist,
+            src:   formTrackURL,
+            cover: formCoverURL || ''
+        };
+
+        TRACKS.push(newTrack);
+        addShelfItem(newTrack);
+        closeModal();
+    });
+
+    // ── Kick off ──
+    bootstrap();
+</script>
+</body>
+</html>
+
+<style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body, html {
+        width: 100%; height: 100%;
+        background: #0a0a0a;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'DM Mono', monospace;
+        overflow: hidden;
+    }
+    body::before {
+        content: ''; position: fixed; inset: 0;
+        background-image:
+            repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+            repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+        pointer-events: none;
+    }
+
+    /* ── Layout ── */
+    .layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 900px;
+        padding: 0 40px;
+        gap: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+        position: fixed;
+        top: 32px;
+        left: 36px;
+        z-index: 10;
+    }
+    .logo-text {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: 7px;
+        color: #E8A020;
+        text-transform: uppercase;
+        white-space: nowrap;
+        text-shadow:
+            0 0 14px rgba(232,160,32,0.55),
+            0 0 32px rgba(232,160,32,0.25),
+            0 0 60px rgba(232,160,32,0.1);
+    }
+
+    /* ── Player ── */
+    .player {
+        flex: 1;
+        display: flex; flex-direction: column; align-items: center;
+        gap: 28px;
+    }
+
+    .vinyl-wrap {
+        position: relative;
+        width: 300px; height: 300px;
+    }
+    .vinyl-disc {
+        width: 300px; height: 300px;
+        border-radius: 50%;
+        background: repeating-radial-gradient(circle,
+            #111 0px, #111 3px,
+            #1c1c1c 3px, #1c1c1c 6px
+        );
+        border: 3px solid #222;
+        box-shadow: 0 0 0 1px #000, 0 24px 64px rgba(0,0,0,0.85), inset 0 0 40px rgba(0,0,0,0.5);
+        animation: spin 4s linear infinite;
+        animation-play-state: paused;
+        position: relative;
+    }
+    .vinyl-disc.playing { animation-play-state: running; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .vinyl-art {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 132px; height: 132px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid #111;
+        box-shadow: 0 0 0 2px #2a2a2a;
+    }
+    .vinyl-art img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+        transition: opacity 0.4s;
+    }
+    .spindle {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        background: #E8A020;
+        z-index: 2;
+        box-shadow: 0 0 8px rgba(232,160,32,0.7);
+    }
+    .vinyl-glow {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 340px; height: 340px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(232,160,32,0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.6s;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .track-info { text-align: center; }
+    .track-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 28px; letter-spacing: 4px;
+        color: #E8A020;
+        text-shadow: 0 0 20px rgba(232,160,32,0.25);
+        transition: opacity 0.3s;
+    }
+    .track-artist {
+        font-size: 11px; letter-spacing: 3px;
+        color: #555; text-transform: uppercase; margin-top: 4px;
+        transition: opacity 0.3s;
+    }
+
+    .progress-wrap { width: 300px; }
+    .prog-row {
+        display: flex; justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .prog-time { font-size: 11px; color: #444; letter-spacing: 1px; }
+    .progress-bar {
+        width: 100%; -webkit-appearance: none; appearance: none;
+        height: 3px; border-radius: 2px;
+        background: #1e1e1e; outline: none; cursor: pointer;
+    }
+    .progress-bar::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #E8A020; border: 2px solid #0a0a0a;
+        box-shadow: 0 0 6px rgba(232,160,32,0.5);
+    }
+    .progress-bar::-moz-range-thumb {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #E8A020; border: 2px solid #0a0a0a;
+    }
+
+    .controls { display: flex; align-items: center; gap: 20px; }
+    .extras { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: -8px; }
+    .mute-btn { width: 36px; height: 36px; }
+    .ctrl-btn {
+        background: transparent;
+        border: 1.5px solid #2a2a2a;
+        border-radius: 50%;
+        width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; color: #666;
+        transition: border-color 0.2s, color 0.2s, transform 0.1s;
+    }
+    .ctrl-btn:hover { border-color: #555; color: #aaa; }
+    .ctrl-btn:active { transform: scale(0.94); }
+    .play-btn {
+        width: 58px; height: 58px;
+        border: 2px solid rgba(232,160,32,0.7);
+        color: #E8A020;
+        box-shadow: 0 0 16px rgba(232,160,32,0.15);
+    }
+    .play-btn:hover {
+        border-color: #E8A020;
+        box-shadow: 0 0 28px rgba(232,160,32,0.35);
+    }
+
+    svg { display: block; }
+
+    /* ── Shelf wrap ── */
+    .shelf-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        margin-left: auto;
+        width: 200px;
+        gap: 12px;
+    }
+
+    /* ── Shelf ── */
+    .shelf {
+        width: 200px;
+        height: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-left: 1px solid #1a1a1a;
+        padding-left: 24px;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+    .shelf::-webkit-scrollbar { display: none; }
+
+    .shelf-label {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 13px;
+        letter-spacing: 5px;
+        color: #2e2e2e;
+        margin-bottom: 18px;
+        text-transform: uppercase;
+    }
+
+    .shelf-track {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #141414;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        position: relative;
+    }
+    .shelf-track:last-child { border-bottom: none; }
+    .shelf-track:hover .shelf-thumb { box-shadow: 0 0 0 2px rgba(232,160,32,0.5); }
+    .shelf-track:hover .shelf-name { color: #ccc; }
+    .shelf-track:active { opacity: 0.7; }
+
+    .shelf-thumb {
+        width: 48px; height: 48px;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 1px solid #222;
+        transition: box-shadow 0.2s;
+    }
+    .shelf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .shelf-meta { min-width: 0; }
+    .shelf-name {
+        font-size: 11px;
+        color: #666;
+        letter-spacing: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color 0.2s;
+        line-height: 1.4;
+    }
+    .shelf-artist {
+        font-size: 10px;
+        color: #333;
+        letter-spacing: 1px;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* active / playing track in shelf */
+    .shelf-track.active .shelf-thumb {
+        box-shadow: 0 0 0 2px #E8A020;
+    }
+    .shelf-track.active .shelf-name { color: #E8A020; }
+    .shelf-track.active .shelf-artist { color: #8a6010; }
+
+    /* playing indicator dot */
+    .shelf-track.active::after {
+        content: '';
+        position: absolute;
+        right: 0; top: 50%;
+        transform: translateY(-50%);
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: #E8A020;
+        box-shadow: 0 0 6px rgba(232,160,32,0.8);
+    }
+
+    /* ── Add Vinyl button ── */
+    .add-vinyl-btn {
+        display: flex; align-items: center; justify-content: center;
+        gap: 7px;
+        width: 100%;
+        padding: 9px 0;
+        background: transparent;
+        border: 1px dashed #2a2a2a;
+        border-radius: 6px;
+        color: #444;
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+        margin-left: 24px;
+    }
+    .add-vinyl-btn:hover { border-color: #E8A020; color: #E8A020; }
+    .add-vinyl-btn:active { transform: scale(0.98); }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.75);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+        background: #111;
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        width: 360px;
+        overflow: hidden;
+        animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
+
+    .modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid #1e1e1e;
+    }
+    .modal-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 18px; letter-spacing: 4px;
+        color: #E8A020;
+    }
+    .modal-close {
+        background: transparent; border: none;
+        color: #444; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        padding: 4px; border-radius: 4px;
+        transition: color 0.2s;
+    }
+    .modal-close:hover { color: #aaa; }
+
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-label { font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
+    .field-input {
+        background: #0d0d0d;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        padding: 9px 12px;
+        color: #ccc;
+        font-family: 'DM Mono', monospace;
+        font-size: 12px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: rgba(232,160,32,0.5); }
+    .field-input::placeholder { color: #333; }
+
+    .drop-zone {
+        background: #0d0d0d;
+        border: 1px dashed #2a2a2a;
+        border-radius: 6px;
+        padding: 16px 12px;
+        display: flex; align-items: center; gap: 10px;
+        cursor: pointer;
+        color: #333;
+        transition: border-color 0.2s, color 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .drop-zone:hover { border-color: rgba(232,160,32,0.4); color: #666; }
+    .drop-zone.drag-over { border-color: #E8A020; color: #E8A020; background: #141200; }
+    .drop-zone.filled { border-style: solid; border-color: rgba(232,160,32,0.4); }
+
+    .drop-label { font-size: 10px; letter-spacing: 1px; flex: 1; }
+
+    .drop-preview {
+        width: 36px; height: 36px; border-radius: 4px;
+        overflow: hidden; flex-shrink: 0;
+    }
+    .drop-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+    .modal-error {
+        font-size: 10px; letter-spacing: 1px;
+        color: #c0392b; min-height: 14px;
+        text-transform: uppercase;
+    }
+
+    .modal-footer {
+        display: flex; justify-content: flex-end; gap: 10px;
+        padding: 14px 20px 18px;
+        border-top: 1px solid #1e1e1e;
+    }
+    .btn-cancel {
+        background: transparent;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        padding: 8px 18px;
+        color: #444;
+        font-family: 'DM Mono', monospace;
+        font-size: 11px; letter-spacing: 1px;
+        cursor: pointer;
+        transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-cancel:hover { border-color: #555; color: #888; }
+    .btn-done {
+        background: #E8A020;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 22px;
+        color: #0a0a0a;
+        font-family: 'DM Mono', monospace;
+        font-size: 11px; font-weight: bold; letter-spacing: 1px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+    }
+    .btn-done:hover { background: #f0b030; }
+    .btn-done:active { transform: scale(0.97); }
+
+    /* ── Volume ── */
+    .volume-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 300px;
+        margin-top: -12px;
+    }
+    .vol-icon { color: #444; flex-shrink: 0; }
+    .volume-track {
+        flex: 1;
+        position: relative;
+        height: 3px;
+        background: #1e1e1e;
+        border-radius: 2px;
+    }
+    .volume-fill {
+        position: absolute;
+        left: 0; top: 0;
+        height: 100%;
+        width: 100%;
+        background: #E8A020;
+        border-radius: 2px;
+        pointer-events: none;
+        transition: width 0.05s;
+    }
+    .volume-bar {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        -webkit-appearance: none; appearance: none;
+        height: 3px;
+        background: transparent;
+        outline: none;
+        cursor: pointer;
+        margin: 0;
+    }
+    .volume-bar::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #E8A020; border: 2px solid #0a0a0a;
+        box-shadow: 0 0 6px rgba(232,160,32,0.5);
+    }
+    .volume-bar::-moz-range-thumb {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #E8A020; border: 2px solid #0a0a0a;
+    }
+    .vol-pct {
+        font-size: 10px;
+        color: #444;
+        letter-spacing: 1px;
+        min-width: 24px;
+        text-align: right;
+    }
+
+    /* fade swap animation */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fadeIn 0.35s ease forwards; }
+</style>

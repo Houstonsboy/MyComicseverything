@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The JukeBox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Bebas Neue', sans-serif;
+            background: #0a0a0a;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bg {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg img {
+            width: 70%;
+            max-width: 70vw;
+            max-height: 70vh;
+            object-fit: contain;
+            opacity: 0.92;
+        }
+        .bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.7) 100%);
+        }
+
+        .start-button {
+            position: fixed;
+            top: 36px;
+            left: 40px;
+            z-index: 10;
+            background: transparent;
+            border: 2px solid rgba(232, 160, 32, 0.85);
+            color: #E8A020;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 7px;
+            padding: 10px 32px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.25s, box-shadow 0.25s, transform 0.1s;
+            box-shadow: 0 0 14px rgba(232, 160, 32, 0.2), inset 0 0 14px rgba(232, 160, 32, 0.04);
+        }
+        .start-button:hover {
+            background: rgba(232, 160, 32, 0.1);
+            box-shadow: 0 0 28px rgba(232, 160, 32, 0.45), inset 0 0 20px rgba(232, 160, 32, 0.08);
+        }
+        .start-button:active { transform: scale(0.96); }
+
+        .mist {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            background: linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,0.6) 85%, transparent 100%);
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        .mist.sweep {
+            animation: mistSweep 0.95s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes mistSweep {
+            0%   { transform: translateX(-100%); opacity: 1; }
+            65%  { transform: translateX(0%);    opacity: 1; }
+            100% { transform: translateX(0%);    opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg">
+        <img src="Jukebox.jpeg" alt="The JukeBox" />
+    </div>
+
+    <button class="start-button" id="startBtn">START</button>
+
+    <div class="mist" id="mist"></div>
+
+    <script>
+        document.getElementById('startBtn').addEventListener('click', function () {
+            const mist = document.getElementById('mist');
+            mist.classList.add('sweep');
+            setTimeout(function () {
+                window.location.href = 'vinylplayer.html';
+            }, 920);
+        });
+    </script>
+</body>
+</html>
