@@ -712,6 +712,18 @@
             padding: 12px;
             position: relative;
             box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .saga-card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        .saga-card-link:hover {
+            transform: translateY(-3px);
+            border-color: rgba(232,160,32,0.65);
+            box-shadow: 0 12px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(232,160,32,0.2);
         }
         .saga-cover-wrap {
             width: 100%;
@@ -1228,13 +1240,13 @@
 <section id="comic-sagas">
     <h2 class="sagas-heading">Comic Sagas</h2>
     <div class="sagas-grid">
-        <article class="saga-card">
+        <a class="saga-card saga-card-link" href="Ragnarok/index.html">
             <div class="saga-cover-wrap">
                 <img src="introductionimg/deathofasgard.jpeg" alt="Saga cover one" />
             </div>
             <span class="saga-issues">12</span>
             <p class="saga-title">Ragnarok: The Death of Asgard </p>
-        </article>
+        </a>
         <article class="saga-card">
             <div class="saga-cover-wrap">
                 <img src="introductionimg/constatine.jpeg" alt="Saga cover two" />
@@ -1247,7 +1259,7 @@
                 <img src="introductionimg/mutants.jpeg" alt="Saga cover three" />
             </div>
             <span class="saga-issues">24</span>
-            <p class="saga-title">Rise of the Mutants</p>
+            <p class="saga-title">Anti Life</p>
         </article>
     </div>
 </section>

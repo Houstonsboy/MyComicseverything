@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ragnarok - Mini Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #E8A020;
+      --bg: #0a0a0a;
+      --text: #d8d2c8;
+      --muted: #7b756c;
+    }
+
+    html, body {
+      width: 100%; min-height: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ═══════════════════════════════════════
+       CRASH INTRO OVERLAY
+    ═══════════════════════════════════════ */
+    #crash-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      overflow: hidden;
+      background: #000;
+      cursor: pointer;
+    }
+
+    /* The image — starts distant/small, SLAMS into viewer */
+    #crash-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 30%;
+      transform: scale(0.55) translateY(-8%);
+      opacity: 0;
+      filter: blur(4px) brightness(0.6);
+      animation: crashApproach 3.2s cubic-bezier(0.22, 0.61, 0.36, 1) 0.3s forwards;
+      will-change: transform, opacity, filter;
+    }
+
+    @keyframes crashApproach {
+      0%   { transform: scale(0.55) translateY(-8%);  opacity: 0;   filter: blur(6px) brightness(0.4); }
+      15%  { opacity: 0.7; }
+      60%  { transform: scale(1.0)  translateY(0%);   opacity: 1;   filter: blur(1px) brightness(0.75); }
+      80%  { transform: scale(1.08) translateY(1%);               filter: blur(0px) brightness(0.9); }
+      90%  { transform: scale(1.22) translateY(2%);   opacity: 1;   filter: blur(0px) brightness(1.1); }
+      100% { transform: scale(1.38) translateY(3%);   opacity: 1;   filter: blur(2px) brightness(1.3); }
+    }
+
+    /* Screen-shake at impact */
+    #crash-intro.impact {
+      animation: screenShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+    }
+    @keyframes screenShake {
+      0%  { transform: translate(0,0) rotate(0deg); }
+      10% { transform: translate(-6px, 4px) rotate(-0.5deg); }
+      20% { transform: translate(7px, -5px) rotate(0.4deg); }
+      30% { transform: translate(-5px, 6px) rotate(-0.3deg); }
+      40% { transform: translate(8px, -3px) rotate(0.5deg); }
+      50% { transform: translate(-4px, 5px) rotate(-0.2deg); }
+      60% { transform: translate(5px, -4px) rotate(0.3deg); }
+      70% { transform: translate(-3px, 3px) rotate(-0.1deg); }
+      85% { transform: translate(2px, -2px) rotate(0.1deg); }
+      100%{ transform: translate(0,0) rotate(0deg); }
+    }
+
+    /* Flash white on impact */
+    #crash-flash {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    #crash-flash.fire {
+      animation: flashBurst 0.5s ease-out forwards;
+    }
+    @keyframes flashBurst {
+      0%   { opacity: 0.85; }
+      100% { opacity: 0; }
+    }
+
+    /* Orange vignette smoke/heat at edges */
+    #crash-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 70%, rgba(10,5,0,0.92) 100%);
+      z-index: 1;
+      opacity: 0;
+      animation: vignetteIn 3.2s ease 0.3s forwards;
+    }
+    @keyframes vignetteIn {
+      0%   { opacity: 0; }
+      40%  { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    /* Heat distortion lines */
+    #crash-heat {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      opacity: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255,120,20,0.04) 3px,
+        rgba(255,120,20,0.04) 4px
+      );
+      animation: heatPulse 0.12s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes heatPulse {
+      0%   { background-position: 0 0; }
+      100% { background-position: 0 8px; }
+    }
+
+    /* Title + skip */
+    #crash-title-wrap {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      z-index: 3;
+      padding: 0 32px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: titleRise 0.7s ease 2.9s forwards;
+    }
+    @keyframes titleRise {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #crash-title-wrap h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 14vw, 110px);
+      letter-spacing: 10px;
+      color: var(--orange);
+      line-height: 1;
+      text-shadow: 0 0 60px rgba(232,160,32,0.5), 0 4px 24px rgba(0,0,0,0.8);
+    }
+
+    #crash-title-wrap p {
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+    }
+
+    #skip-btn {
+      position: absolute;
+      top: 20px; right: 20px;
+      z-index: 4;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.4);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      padding: 8px 16px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: color 0.2s, border-color 0.2s;
+      opacity: 0;
+      animation: fadeSkip 0.5s ease 1.5s forwards;
+    }
+    @keyframes fadeSkip { to { opacity: 1; } }
+    #skip-btn:hover { color: var(--orange); border-color: var(--orange); }
+
+    /* tap hint on mobile */
+    #tap-hint {
+      position: absolute;
+      bottom: 120px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.25);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeSkip 0.5s ease 3.2s forwards, hintBlink 1.8s ease 3.2s infinite;
+    }
+    @keyframes hintBlink { 0%,100%{opacity:0.25} 50%{opacity:0.6} }
+
+    /* Outro: page bursts through */
+    #crash-intro.exiting {
+      animation: introExit 0.6s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+    }
+    @keyframes introExit {
+      0%   { transform: scale(1);    opacity: 1; }
+      40%  { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1.18); opacity: 0; pointer-events: none; }
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN PAGE (hidden until intro done)
+    ═══════════════════════════════════════ */
+    #main-content {
+      opacity: 0;
+      transition: opacity 0.5s ease 0.1s;
+    }
+    #main-content.visible { opacity: 1; }
+
+    /* grid bg */
+    .bg-grid::before {
+      content: "";
+      position: fixed; inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+      pointer-events: none; z-index: 0;
+    }
+
+    .page-copy {
+      position: relative; z-index: 1;
+      padding: 72px 24px; max-width: 720px;
+    }
+    .page-title {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 7px; color: var(--orange);
+      font-size: clamp(34px, 8vw, 64px); margin-bottom: 12px;
+    }
+    .page-sub { letter-spacing: 1px; color: var(--muted); font-size: 12px; }
+
+    /* ═══════════════════════════════════════
+       STORY SECTION (styled like vinyl about)
+    ═══════════════════════════════════════ */
+    #story-section {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+    }
+    .story-heading {
+      font-family: 'Bebas Neue', sans-serif;
+      color: var(--orange);
+      letter-spacing: 6px;
+      font-size: clamp(36px, 6vw, 56px);
+      line-height: 1;
+      margin-bottom: 56px;
+      text-transform: uppercase;
+    }
+    #story-typed-text {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      max-width: 860px;
+      min-height: 220px;
+    }
+    .typed-paragraph { margin-bottom: 20px; }
+    .typed-paragraph:last-of-type { margin-bottom: 0; }
+    .about-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--orange);
+      vertical-align: middle;
+      margin-left: 2px;
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+    #story-image-reveal {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.4s cubic-bezier(0.4,0,0.2,1);
+      margin-top: 64px;
+    }
+    #story-image-reveal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .story-media {
+      width: fit-content;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 15%;
+    }
+    #story-img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: clamp(497px, 63.48vw, 828px);
+      max-height: 773px;
+      border: 1px solid #2a2a2a;
+      border-radius: 3px;
+    }
+    .story-img-label {
+      margin-top: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 5px;
+      font-size: 11px;
+      color: rgba(232,160,32,0.45);
+      text-transform: uppercase;
+      text-align: center;
+    }
+    @media (max-width: 768px) {
+      #story-section {
+        padding: 60px 24px 100px;
+      }
+      #story-image-reveal {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #story-img {
+        width: min(100%, 672px);
+        max-width: 100%;
+        height: 100vw;
+        max-height: 92vh;
+        object-fit: contain;
+        border: none;
+        background: #080808;
+      }
+      .story-img-label { padding: 0 24px; }
+    }
+    @media (min-width: 769px) {
+      #story-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "heading heading"
+          "text image";
+        column-gap: 52px;
+        align-items: start;
+      }
+      .story-heading { grid-area: heading; }
+      #story-typed-text { grid-area: text; align-self: center; }
+      #story-image-reveal { grid-area: image; margin-top: 0; }
+    }
+    #story-section-3 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+    }
+    #story-typed-text-3 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      min-height: 220px;
+    }
+    #story-image-reveal-3 {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.4s cubic-bezier(0.4,0,0.2,1);
+      margin-top: 64px;
+    }
+    #story-image-reveal-3.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 768px) {
+      #story-section-3 {
+        padding: 60px 24px 100px;
+      }
+      #story-image-reveal-3 {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #story-img-3 {
+        width: min(100%, 672px);
+        max-width: 100%;
+        height: 100vw;
+        max-height: 92vh;
+        object-fit: contain;
+        border: none;
+        background: #080808;
+      }
+    }
+    @media (min-width: 769px) {
+      #story-section-3 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "text image";
+        column-gap: 52px;
+        align-items: start;
+      }
+      #story-typed-text-3 { grid-area: text; align-self: center; }
+      #story-image-reveal-3 {
+        grid-area: image;
+        margin-top: 0;
+      }
+      #story-img-3 {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: clamp(497px, 63.48vw, 828px);
+        max-height: 773px;
+        border: 1px solid #2a2a2a;
+        border-radius: 3px;
+      }
+    }
+    #story-section-4 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+    }
+    #story-typed-text-4 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      min-height: 220px;
+    }
+    #story-image-reveal-4 {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.4s cubic-bezier(0.4,0,0.2,1);
+      margin-top: 64px;
+    }
+    #story-image-reveal-4.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 768px) {
+      #story-section-4 {
+        padding: 60px 24px 100px;
+      }
+      #story-image-reveal-4 {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #story-img-4 {
+        width: min(100%, 672px);
+        max-width: 100%;
+        height: 100vw;
+        max-height: 92vh;
+        object-fit: contain;
+        border: none;
+        background: #080808;
+      }
+    }
+    @media (min-width: 769px) {
+      #story-section-4 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "text image";
+        column-gap: 52px;
+        align-items: start;
+      }
+      #story-typed-text-4 { grid-area: text; align-self: center; }
+      #story-image-reveal-4 {
+        grid-area: image;
+        margin-top: 0;
+      }
+      #story-img-4 {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: clamp(497px, 63.48vw, 828px);
+        max-height: 773px;
+        border: 1px solid #2a2a2a;
+        border-radius: 3px;
+      }
+    }
+    #story-section-2 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #story-typed-text-2 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      #story-section-2 {
+        padding: 60px 24px 100px;
+        min-height: auto;
+      }
+    }
+    #story-section-5 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #story-typed-text-5 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      #story-section-5 {
+        padding: 60px 24px 100px;
+        min-height: auto;
+      }
+    }
+    #story-section-6 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+    }
+    #story-typed-text-6 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      min-height: 220px;
+    }
+    #story-image-reveal-6 {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.4s cubic-bezier(0.4,0,0.2,1);
+      margin-top: 64px;
+    }
+    #story-image-reveal-6.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 768px) {
+      #story-section-6 {
+        padding: 60px 24px 100px;
+      }
+      #story-image-reveal-6 {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #story-img-6 {
+        width: min(100%, 672px);
+        max-width: 100%;
+        height: 100vw;
+        max-height: 92vh;
+        object-fit: contain;
+        border: none;
+        background: #080808;
+      }
+    }
+    @media (min-width: 769px) {
+      #story-section-6 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "text image";
+        column-gap: 52px;
+        align-items: start;
+      }
+      #story-typed-text-6 { grid-area: text; align-self: center; }
+      #story-image-reveal-6 {
+        grid-area: image;
+        margin-top: 0;
+      }
+      #story-img-6 {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: clamp(497px, 63.48vw, 828px);
+        max-height: 773px;
+        border: 1px solid #2a2a2a;
+        border-radius: 3px;
+      }
+    }
+    #story-section-7 {
+      min-height: 100vh;
+      padding: 80px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #story-typed-text-7 {
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: clamp(16px, 1.55vw, 20px);
+      line-height: 2;
+      color: rgba(226, 221, 213, 0.88);
+      max-width: 860px;
+      letter-spacing: 0.01em;
+      word-spacing: 0.04em;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      #story-section-7 {
+        padding: 60px 24px 100px;
+        min-height: auto;
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       MINI PLAYER (unchanged)
+    ═══════════════════════════════════════ */
+    .mini-player {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 9999;
+    }
+    .mini-vinyl-disc {
+      width: 64px; height: 64px; border-radius: 50%;
+      overflow: hidden; border: 2px solid #222;
+      box-shadow: 0 0 0 2px rgba(232,160,32,0.3);
+      animation: spin 4s linear infinite;
+      animation-play-state: paused;
+      position: relative; cursor: pointer;
+    }
+    .mini-vinyl-disc.playing { animation-play-state: running; }
+    .mini-vinyl-disc:hover { box-shadow: 0 0 0 3px rgba(232,160,32,0.7); }
+    .mini-vinyl-art { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+    .mini-vinyl-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mini-spindle {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--orange); z-index: 2;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .mini-popup {
+      position: absolute; right: 0; top: calc(100% + 10px);
+      width: min(240px, calc(100vw - 24px));
+      background: #111; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      opacity: 0; pointer-events: none;
+      transform: translateY(-8px) scale(0.95);
+      transform-origin: top right;
+      transition: opacity .25s, transform .25s;
+    }
+    .mini-popup.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+    .mini-popup-cover { width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #2a2a2a; flex-shrink: 0; }
+    .mini-popup-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mini-popup-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--orange); text-align: center; }
+    .mini-popup-artist { font-size: 10px; letter-spacing: 1px; color: #6a6a6a; text-transform: uppercase; text-align: center; }
+    .mini-prog-wrap { width: 100%; }
+    .mini-prog-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .mini-prog-time { font-size: 10px; color: #545454; letter-spacing: 1px; }
+    .mini-prog-bar {
+      width: 100%; -webkit-appearance: none; appearance: none;
+      height: 2px; border-radius: 1px; background: #1e1e1e; outline: none; cursor: pointer;
+    }
+    .mini-prog-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--orange); border: 2px solid #111; }
+    .mini-prog-bar::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); border: 2px solid #111; }
+    .mini-controls { display: flex; align-items: center; gap: 10px; }
+    .mini-ctrl-btn {
+      background: transparent; border: 1.5px solid #2a2a2a; border-radius: 50%;
+      width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #666; transition: border-color .2s, color .2s, transform .1s;
+    }
+    .mini-ctrl-btn:hover { border-color: #555; color: #aaa; }
+    .mini-ctrl-btn:active { transform: scale(0.93); }
+    .mini-play-btn { width: 42px; height: 42px; border: 2px solid rgba(232,160,32,0.7); color: var(--orange); }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════ CRASH INTRO ══════════ -->
+  <div id="crash-intro">
+    <img id="crash-img" src="planetexplosion.jpeg" alt="Crash landing"
+         onerror="this.style.display='none'; document.getElementById('crash-intro').style.background='linear-gradient(160deg,#1a0a00,#000)'"/>
+    <div id="crash-vignette"></div>
+    <div id="crash-heat"></div>
+    <div id="crash-flash"></div>
+
+    <div id="crash-title-wrap">
+      <h1>Ragnarok</h1>
+      <p>tap anywhere to enter</p>
+    </div>
+
+    <button id="skip-btn">Skip ↗</button>
+    <div id="tap-hint">— tap to enter —</div>
+  </div>
+
+  <!-- ══════════ MAIN PAGE ══════════ -->
+  <div id="main-content">
+    <div class="mini-player" id="mini-player">
+      <div class="mini-popup" id="mini-popup">
+        <div class="mini-popup-cover">
+          <img id="mini-popup-cover-img" src="planetexplosion.jpeg" alt="">
+        </div>
+        <div class="mini-popup-title" id="mini-popup-title">-</div>
+        <div class="mini-popup-artist" id="mini-popup-artist">-</div>
+        <div class="mini-prog-wrap">
+          <div class="mini-prog-row">
+            <span class="mini-prog-time" id="mini-time-cur">0:00</span>
+            <span class="mini-prog-time" id="mini-time-dur">0:00</span>
+          </div>
+          <input type="range" class="mini-prog-bar" id="mini-prog-bar" min="0" max="100" value="0" step="0.1">
+        </div>
+        <div class="mini-controls">
+          <button class="mini-ctrl-btn" id="mini-btn-prev" aria-label="Previous track">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/></svg>
+          </button>
+          <button class="mini-ctrl-btn mini-play-btn" id="mini-btn-play" aria-label="Play or pause">
+            <svg id="mini-icon-play" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg id="mini-icon-pause" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button class="mini-ctrl-btn" id="mini-btn-next" aria-label="Next track">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mini-vinyl-disc" id="mini-vinyl">
+        <div class="mini-vinyl-art"><img id="mini-cover" src="" alt=""></div>
+        <div class="mini-spindle"></div>
+      </div>
+    </div>
+
+    
+    <section id="story-section" class="bg-grid">
+      <h2 class="story-heading">Crashlandings</h2>
+      <div id="story-typed-text"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal" class="story-media">
+        <img id="story-img" src="spaceshipcrashing.jpeg" alt="Vessel crashlanding across Asgard sky">
+        <p class="story-img-label">Crash Sequence</p>
+      </div>
+    </section>
+    <section id="story-section-2" class="bg-grid">
+      <div id="story-typed-text-2"><span class="about-cursor"></span></div>
+    </section>
+    <section id="story-section-3" class="bg-grid">
+      <div id="story-typed-text-3"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-3" class="story-media">
+        <img id="story-img-3" src="thorentrance.jpeg" alt="Thor confronting uninvited guests">
+        <p class="story-img-label">Uninvited Guest</p>
+      </div>
+    </section>
+    <section id="story-section-4" class="bg-grid">
+      <div id="story-typed-text-4"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-4" class="story-media">
+        <img id="story-img-4" src="mjolnirdrop.jpeg" alt="Mjolnir impact shaking the ground">
+        <p class="story-img-label">Mjolnir </p>
+      </div>
+    </section>
+    <section id="story-section-5" class="bg-grid">
+      <div id="story-typed-text-5"><span class="about-cursor"></span></div>
+    </section>
+    <section id="story-section-6" class="bg-grid">
+      <div id="story-typed-text-6"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-6" class="story-media">
+        <img id="story-img-6" src="lokientrance.jpeg" alt="Loki watching with mischievous delight">
+        <p class="story-img-label">Loki</p>
+      </div>
+    </section>
+    <section id="story-section-7" class="bg-grid">
+      <div id="story-typed-text-7"><span class="about-cursor"></span></div>
+    </section>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+  <script>
+    /* ── CRASH INTRO SEQUENCE ── */
+    const intro     = document.getElementById('crash-intro');
+    const crashFlash= document.getElementById('crash-flash');
+    const crashHeat = document.getElementById('crash-heat');
+    const mainContent = document.getElementById('main-content');
+    let   introDone = false;
+
+    // Impact shake fires at ~3.5s (when image scale is maximum)
+    setTimeout(() => {
+      intro.classList.add('impact');
+      crashFlash.classList.add('fire');
+      crashHeat.style.opacity = '0.8';
+      // rumble sound via AudioContext (no file needed)
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(60, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+      } catch(e){}
+      setTimeout(() => { crashHeat.style.opacity = '0'; }, 600);
+    }, 3300);
+
+    function exitIntro() {
+      if (introDone) return;
+      introDone = true;
+      intro.classList.remove('impact');
+      intro.classList.add('exiting');
+      mainContent.classList.add('visible');
+      // Re-anchor playback to index 0 when entering.
+      setTimeout(startFirstTrackPlayback, 0);
+      setTimeout(() => { intro.style.display = 'none'; }, 650);
+    }
+
+    // Click/tap anywhere on intro to dismiss (after 2s)
+    setTimeout(() => {
+      intro.addEventListener('click', exitIntro);
+    }, 2000);
+
+    document.getElementById('skip-btn').addEventListener('click', e => {
+      e.stopPropagation(); exitIntro();
+    });
+
+    // Auto-dismiss after 6s if user doesn't interact
+    setTimeout(exitIntro, 6000);
+
+    /* ── MINI PLAYER (original logic, unchanged) ── */
+    const TRACKS = [
+      { id: 1, title: "finewhine",        artist: "Asap Rocky",  src: "../finewhine.mp3",   cover: "../finewhine.jpeg" },
+      { id: 2, title: "is there someone else?",artist: "the weeknd",  src: "istheresomeonelese.mp3", cover: "istheresomeonelse.jpeg" },
+      { id: 3, title: "Last Horn",        artist: "Odin's Echo", src: "last-horn.mp3",         cover: "cover-ragnarok-3.jpg" }
+    ];
+
+    const audio          = document.getElementById('audio');
+    const miniVinyl      = document.getElementById('mini-vinyl');
+    const miniPopup      = document.getElementById('mini-popup');
+    const miniCover      = document.getElementById('mini-cover');
+    const miniPopupCover = document.getElementById('mini-popup-cover-img');
+    const miniPopupTitle = document.getElementById('mini-popup-title');
+    const miniPopupArtist= document.getElementById('mini-popup-artist');
+    const miniProgBar    = document.getElementById('mini-prog-bar');
+    const miniTimeCur    = document.getElementById('mini-time-cur');
+    const miniTimeDur    = document.getElementById('mini-time-dur');
+    const miniBtnPlay    = document.getElementById('mini-btn-play');
+    const miniIconPlay   = document.getElementById('mini-icon-play');
+    const miniIconPause  = document.getElementById('mini-icon-pause');
+    const miniBtnPrev    = document.getElementById('mini-btn-prev');
+    const miniBtnNext    = document.getElementById('mini-btn-next');
+
+    let currentTrack = null;
+    let popupOpen    = false;
+
+    const fmt = s => !isFinite(s) ? '0:00' : Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+    function setPlaying(p) {
+      miniIconPlay.style.display  = p ? 'none'  : 'block';
+      miniIconPause.style.display = p ? 'block' : 'none';
+      miniVinyl.classList.toggle('playing', p);
+    }
+    function currentIndex() { return TRACKS.findIndex(t => t.id === currentTrack?.id); }
+    function loadTrack(track) {
+      currentTrack = track;
+      miniCover.src = miniPopupCover.src = track.cover || '';
+      miniCover.alt = track.title;
+      miniPopupTitle.textContent  = track.title;
+      miniPopupArtist.textContent = track.artist;
+      miniProgBar.value = 0; miniTimeCur.textContent = '0:00'; miniTimeDur.textContent = '0:00';
+      audio.src = track.src; audio.load();
+      audio.addEventListener('canplay', function onCP() {
+        audio.removeEventListener('canplay', onCP);
+        audio.play().catch(()=>{});
+      });
+    }
+
+    function startFirstTrackPlayback() {
+      if (!TRACKS.length) return;
+      loadTrack(TRACKS[0]);
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    miniBtnPrev.addEventListener('click', () => TRACKS.length && loadTrack(TRACKS[(currentIndex()-1+TRACKS.length)%TRACKS.length]));
+    miniBtnNext.addEventListener('click', () => TRACKS.length && loadTrack(TRACKS[(currentIndex()+1)%TRACKS.length]));
+    miniBtnPlay.addEventListener('click', () => { if (!audio.src) return; audio.paused ? audio.play().catch(()=>{}) : audio.pause(); });
+    miniVinyl.addEventListener('click', e => { e.stopPropagation(); popupOpen=!popupOpen; miniPopup.classList.toggle('open',popupOpen); });
+    document.addEventListener('click', () => { if (!popupOpen) return; popupOpen=false; miniPopup.classList.remove('open'); });
+    miniPopup.addEventListener('click', e => e.stopPropagation());
+    audio.addEventListener('play',  () => setPlaying(true));
+    audio.addEventListener('pause', () => setPlaying(false));
+    audio.addEventListener('ended', () => TRACKS.length && loadTrack(TRACKS[(currentIndex()+1)%TRACKS.length]));
+    audio.addEventListener('loadedmetadata', () => { miniProgBar.max=audio.duration||0; miniTimeDur.textContent=fmt(audio.duration); });
+    audio.addEventListener('timeupdate', () => { miniProgBar.value=audio.currentTime||0; miniTimeCur.textContent=fmt(audio.currentTime); });
+    miniProgBar.addEventListener('input', () => { audio.currentTime=Number(miniProgBar.value); });
+
+    // ── Story section: same typing flow as vinylplayer ──
+    const storySection = document.getElementById('story-section');
+    const storyTypedText = document.getElementById('story-typed-text');
+    const storyImageReveal = document.getElementById('story-image-reveal');
+    const storySection2 = document.getElementById('story-section-2');
+    const storyTypedText2 = document.getElementById('story-typed-text-2');
+    const storySection3 = document.getElementById('story-section-3');
+    const storyTypedText3 = document.getElementById('story-typed-text-3');
+    const storyImageReveal3 = document.getElementById('story-image-reveal-3');
+    const storySection4 = document.getElementById('story-section-4');
+    const storyTypedText4 = document.getElementById('story-typed-text-4');
+    const storyImageReveal4 = document.getElementById('story-image-reveal-4');
+    const storySection5 = document.getElementById('story-section-5');
+    const storyTypedText5 = document.getElementById('story-typed-text-5');
+    const storySection6 = document.getElementById('story-section-6');
+    const storyTypedText6 = document.getElementById('story-typed-text-6');
+    const storyImageReveal6 = document.getElementById('story-image-reveal-6');
+    const storySection7 = document.getElementById('story-section-7');
+    const storyTypedText7 = document.getElementById('story-typed-text-7');
+    const STORY_PARAGRAPHS = [
+      "The silence of the void is broken by a violent incision of light.",
+      "High above the gilded spires of Asgard, the darkness bleeds white-hot as a jagged silhouette tears through the vacuum. It is a screaming comet of metal and friction, trailing a wake of fire that shatters the midday sky like cracked glass. Below, the Einherjar pause, their spears reflecting the unnatural brilliance of a falling star that refuses to burn out.",
+      "As the vessel plunges deeper, the friction-fire peels back to reveal a scorched hull that defies the primitive laws of the galaxy. This was not a craft forged by common hands, but by an apex civilization now lost to the stars."
+    ];
+    const STORY_PARAGRAPHS_2 = [
+      "Inside, the cabin is a tomb. Flickering amber warnings dance across freezing shadows. A lone figure sits slumped in the command chair, unresponsive, as the sheer G-force pins it into the upholstery of his own coffin. Through the cracked glass of the windshield, the crystalline mountains of the Realm Eternal rush upward with terrifying precision.",
+      "Inside the cockpit, the world is a screaming blur the altimeter spins in a frantic, losing race against the approaching crystalline peaks. Through the cracked windshield, the ground rushes up to meet the ship, a jagged maw of stone ready to swallow the craft whole.",
+      "But",
+      "There is no violent jolt, no bone-snapping impact. Instead, a massive, invisible hand seems to seize the very soul of the ship. The screeching wind dies to a low whistle as the vessel is veered sharply away from the cliffs, banking with an impossible, effortless grace. The ship doesn't crash; it is placed.",
+      "A hard break.",
+      "The monitors jolt awake, flickering through lines of static. On the external belly-camera, the pilot sees the truth. Hovering just above the emerald grass, a single figure holds the massive, multi-ton wing of the starship with one casual, outstretched hand.",
+      "In the cold glow of the screen, the pilot sees him: a man sculpted like a monument, with hair of spun gold and eyes as deep as the trenches of the sea. He looks like a god, because he is a god.",
+      "Outside, the atmosphere begins to curdle. The Nimbus Nightmare clouds roll in, bruising the sky purple and black."
+    ];
+    const STORY_PARAGRAPHS_3 = [
+      "Thor does not like uninvited guests. To this three-thousand-year-old deity, the universe has become a strange and hostile place."
+    ];
+    const STORY_PARAGRAPHS_4 = [
+      "He drops Mjolnir, and the impact, a localized earthquake that humbles the very ground he stands upon."
+    ];
+    const STORY_PARAGRAPHS_5 = [
+      "Thor approaches the wreckage, the hull still white-hot and hissing. This Titanium-carbon steel was forged to withstand the harshness of the stars, yet under Thor’s calloused grip, it groans and yields. He peels the reinforced walls back like wet paper, the metal shrieking in protest as the vacuum seal breaks, venting a cloud of jagged steam into the cold Asgardian air.",
+      "He steps into the breach.",
+      "The cabin is a graveyard of shadows, lit only by the rhythmic, dying heartbeat of red emergency lights. Beep. Beep. The smell of scorched wiring and alien ozone hangs heavy. Thor moves with the silence of a predator, his heavy boots muffled by the debris.",
+      "\"Show yourself,\" Thor’s voice rumbles, a low frequency that vibrates in the pilot's chest. \"Come out into the light, traveler.\"",
+      "Silence follows, thick and suffocating. Then, the faint scuff of a boot behind him—the subtle displacement of air as someone moves through the darkness, closing in on the God's blind side. Thor doesn't turn. He doesn't even reach for his hammer. He simply stares into the gloom ahead, his voice dropping to a dangerous, icy velvet.",
+      "\"It would be wise,\" he mutters, the air around him beginning to taste of static, \"to be friendly.\"",
+      "A metal canister whistles through the shadows, shattering against Thor’s broad back in a spray of sparks and useless debris. He doesn't flinch, but the distraction is enough. The pilot bolts, lunging through the jagged hole Thor ripped in the hull.",
+      "The pilot skids to a halt at the very edge of the opening, her boots kicking up dust as she stares into the abyss.",
+      "Beyond the ship lies a terrifying, 700-meter plunge. The Asgardian sun breaks through the nimbus clouds, illuminating the pilot's face for the first time: she is young, a blond girl named Kara, her eyes wide with frantic desperation. Below her, the cliff face drops into a dizzying void of jagged rocks and whistling winds—a fall that would crush anything mortal.",
+      "Thor spins, his massive hand outstretched to reclaim his prisoner. Kara looks at the drop, then at the God of Thunder. She takes a single, shuddering breath, closes her eyes, and surrenders to the gravity.",
+      "She jumps.",
+      "The wind screams in her ears for a split second, the stomach-flipping sensation of a terminal fall taking hold—and then, thud.",
+      "The \"abyss\" vanishes like smoke in a breeze. The 700-meter cliff shimmers and dissolves, revealing the truth: she hasn't fallen into a canyon, but merely two feet down onto soft, emerald grass. The terrifying height was nothing more than a cruel masterpiece of light and shadow.",
+      "Stunned, Kara gasps, her hands digging into the soil as she tries to make sense of the impossible. The ship is right behind her, barely elevated. The world is peaceful, golden, and terrifyingly still.",
+      "Sitting on a nearby rock, watching her with a look of mischievous delight, is a man who looks far too pleased with the chaos. He leans forward, his smile sharp and predatory.",
+      "Loki."
+    ];
+    const STORY_PARAGRAPHS_6 = [
+      "Loki."
+    ];
+    const STORY_PARAGRAPHS_7 = [
+      "Kara spins on her heel, her heart hammering against her ribs as she lunges into a desperate sprint. She doesn't get five steps.",
+      "A sudden, low-frequency hum tears through the air—the sound of the atmosphere being displaced by something impossibly dense. Mjolnir streaks past her, a blur of cold Uru metal that misses her temple by mere inches.",
+      "Kara is caught in the turbulence of its return. The force is overwhelming, a crushing weight that sweeps her legs out from under her and slams her back into the dirt. Looking up through the grass, she sees Thor catch the weapon with a deafening crack of leather against palm. The shockwave ripples outward, flattening the greenery for yards. Kara’s shoulders sag. The defiance drains out of her as she stares at the two gods, one a mountain of storm-tossed iron, the other a silken shadow of lies.",
+      "She stops fighting. She concedes."
+    ];
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function typeStoryParagraph(targetEl, text, isLastParagraph) {
+      const p = document.createElement('p');
+      p.className = 'typed-paragraph';
+      targetEl.appendChild(p);
+
+      for (let i = 1; i <= text.length; i++) {
+        p.innerHTML = escapeHtml(text.slice(0, i)) + '<span class="about-cursor"></span>';
+        const ch = text[i - 1];
+        const delay = ch === ' ' ? 16 : /[.,;:!?]/.test(ch) ? 60 : 24;
+        await wait(delay);
+      }
+
+      // Keep cursor only on the very last paragraph.
+      if (!isLastParagraph) {
+        p.innerHTML = escapeHtml(text);
+      }
+    }
+
+    function reserveTypedHeight(targetEl, paragraphs) {
+      if (!targetEl) return;
+      targetEl.innerHTML = '';
+
+      for (let i = 0; i < paragraphs.length; i++) {
+        const p = document.createElement('p');
+        p.className = 'typed-paragraph';
+        p.textContent = paragraphs[i];
+        targetEl.appendChild(p);
+      }
+
+      const reservedHeight = targetEl.scrollHeight;
+      targetEl.innerHTML = '';
+      targetEl.style.minHeight = `${reservedHeight}px`;
+    }
+
+    async function runStoryTypewriter(block) {
+      if (!block || !block.textEl) return;
+      block.textEl.innerHTML = '';
+
+      for (let i = 0; i < block.paragraphs.length; i++) {
+        const isLastParagraph = i === block.paragraphs.length - 1;
+        await typeStoryParagraph(block.textEl, block.paragraphs[i], isLastParagraph);
+        if (i < block.paragraphs.length - 1) await wait(260);
+      }
+
+      if (block.revealEl) {
+        await wait(300);
+        block.revealEl.classList.add('visible');
+      }
+    }
+
+    const STORY_BLOCKS = [
+      { sectionEl: storySection, textEl: storyTypedText, revealEl: storyImageReveal, paragraphs: STORY_PARAGRAPHS },
+      { sectionEl: storySection2, textEl: storyTypedText2, revealEl: null, paragraphs: STORY_PARAGRAPHS_2 },
+      { sectionEl: storySection3, textEl: storyTypedText3, revealEl: storyImageReveal3, paragraphs: STORY_PARAGRAPHS_3 },
+      { sectionEl: storySection4, textEl: storyTypedText4, revealEl: storyImageReveal4, paragraphs: STORY_PARAGRAPHS_4 },
+      { sectionEl: storySection5, textEl: storyTypedText5, revealEl: null, paragraphs: STORY_PARAGRAPHS_5 },
+      { sectionEl: storySection6, textEl: storyTypedText6, revealEl: storyImageReveal6, paragraphs: STORY_PARAGRAPHS_6 },
+      { sectionEl: storySection7, textEl: storyTypedText7, revealEl: null, paragraphs: STORY_PARAGRAPHS_7 }
+    ];
+    const startedBlocks = new WeakSet();
+    STORY_BLOCKS.forEach(block => reserveTypedHeight(block.textEl, block.paragraphs));
+
+    function startBlockOnce(block) {
+      if (!block || startedBlocks.has(block)) return;
+      startedBlocks.add(block);
+      runStoryTypewriter(block);
+    }
+
+    const storyObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const idx = Number(entry.target.dataset.storyBlock);
+        if (!Number.isNaN(idx) && STORY_BLOCKS[idx]) startBlockOnce(STORY_BLOCKS[idx]);
+      });
+    }, { threshold: 0.5 });
+
+    STORY_BLOCKS.forEach((block, idx) => {
+      if (!block.textEl) return;
+      block.textEl.dataset.storyBlock = String(idx);
+      storyObserver.observe(block.textEl);
+    });
+
+    if (storySection && storySection.getBoundingClientRect().top < window.innerHeight * 0.8) {
+      startBlockOnce(STORY_BLOCKS[0]);
+    }
+
+    // Always start from index 0 on initial render and refresh.
+    startFirstTrackPlayback();
+    window.addEventListener('pageshow', startFirstTrackPlayback);
+  </script>
+</body>
+</html>
