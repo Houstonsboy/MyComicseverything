@@ -986,7 +986,6 @@
       "The \"abyss\" vanishes like smoke in a breeze. The 700-meter cliff shimmers and dissolves, revealing the truth: she hasn't fallen into a canyon, but merely two feet down onto soft, emerald grass. The terrifying height was nothing more than a cruel masterpiece of light and shadow.",
       "Stunned, Kara gasps, her hands digging into the soil as she tries to make sense of the impossible. The ship is right behind her, barely elevated. The world is peaceful, golden, and terrifyingly still.",
       "Sitting on a nearby rock, watching her with a look of mischievous delight, is a man who looks far too pleased with the chaos. He leans forward, his smile sharp and predatory.",
-      "Loki."
     ];
     const STORY_PARAGRAPHS_6 = [
       "Loki."
@@ -1077,18 +1076,20 @@
       runStoryTypewriter(block);
     }
 
+    // Use threshold 0 and observe sections (not the typed div). Long blocks reserve a huge
+    // min-height so 50% of #story-typed-text-N rarely fits on mobile — story 5 never fired.
     const storyObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
         const idx = Number(entry.target.dataset.storyBlock);
         if (!Number.isNaN(idx) && STORY_BLOCKS[idx]) startBlockOnce(STORY_BLOCKS[idx]);
       });
-    }, { threshold: 0.5 });
+    }, { threshold: 0, rootMargin: '0px 0px -48px 0px' });
 
     STORY_BLOCKS.forEach((block, idx) => {
-      if (!block.textEl) return;
-      block.textEl.dataset.storyBlock = String(idx);
-      storyObserver.observe(block.textEl);
+      if (!block.sectionEl) return;
+      block.sectionEl.dataset.storyBlock = String(idx);
+      storyObserver.observe(block.sectionEl);
     });
 
     if (storySection && storySection.getBoundingClientRect().top < window.innerHeight * 0.8) {
