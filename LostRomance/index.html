@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lost Romance - Mini Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #E8A020;
+      --bg: #0a0a0a;
+      --text: #d8d2c8;
+      --muted: #7b756c;
+      --panel: #111;
+      --panel-border: #2a2a2a;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Bebas Neue', sans-serif;
+    }
+
+    .bg-grid::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #main-content {
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      position: relative;
+      z-index: 1;
+    }
+    #main-content.visible { opacity: 1; }
+
+    .story-section {
+      min-height: 100vh;
+      padding: 90px 60px 120px;
+      border-top: 1px solid #1a1a1a;
+      display: grid;
+      grid-template-columns: minmax(320px, 760px) minmax(260px, 460px);
+      gap: 48px;
+      align-items: start;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .story-heading {
+      font-family: 'Bebas Neue', sans-serif;
+      color: var(--orange);
+      letter-spacing: 5px;
+      font-size: clamp(30px, 5vw, 46px);
+      margin-bottom: 36px;
+      text-transform: uppercase;
+      grid-column: 1 / -1;
+      line-height: 1;
+    }
+
+    .story-typed-text {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(14px, 1.25vw, 18px);
+      line-height: 1.8;
+      letter-spacing: 0.35px;
+      color: #cfc8bc;
+      max-width: 760px;
+      white-space: normal;
+      align-self: center;
+    }
+    .story-typed-text .typed-paragraph + .typed-paragraph { margin-top: 1.15em; }
+
+    .about-cursor {
+      display: inline-block;
+      width: 0.08em;
+      height: 1em;
+      margin-left: 0.06em;
+      background: rgba(232,160,32,0.9);
+      vertical-align: -0.12em;
+      animation: blink 0.9s steps(1) infinite;
+    }
+    @keyframes blink { 0%,45% {opacity:1;} 46%,100% {opacity:0;} }
+
+    .story-image-reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      align-self: center;
+      justify-self: center;
+      width: min(100%, 460px);
+    }
+    .story-image-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .story-image-card {
+      border: 1px solid #242424;
+      background: #0e0e0e;
+      padding: 14px;
+    }
+    .story-image-card img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      display: block;
+      border: 1px solid #1a1a1a;
+    }
+    .story-img-label {
+      margin-top: 10px;
+      color: #8f877c;
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .mini-player {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 9999;
+    }
+    .mini-vinyl-disc {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #222;
+      box-shadow: 0 0 0 2px rgba(232,160,32,0.3);
+      animation: spin 4s linear infinite;
+      animation-play-state: paused;
+      position: relative;
+      cursor: pointer;
+    }
+    .mini-vinyl-disc.playing { animation-play-state: running; }
+    .mini-vinyl-disc:hover { box-shadow: 0 0 0 3px rgba(232,160,32,0.7); }
+    .mini-vinyl-art { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; }
+    .mini-vinyl-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mini-spindle {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--orange); z-index: 2;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .mini-popup {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 10px);
+      width: min(240px, calc(100vw - 24px));
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px) scale(0.95);
+      transform-origin: top right;
+      transition: opacity .25s, transform .25s;
+    }
+    .mini-popup.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+    .mini-popup-cover { width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #2a2a2a; flex-shrink: 0; }
+    .mini-popup-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mini-popup-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--orange); text-align: center; }
+    .mini-popup-artist { font-size: 10px; letter-spacing: 1px; color: #6a6a6a; text-transform: uppercase; text-align: center; }
+    .mini-prog-wrap { width: 100%; }
+    .mini-prog-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .mini-prog-time { font-size: 10px; color: #545454; letter-spacing: 1px; }
+    .mini-prog-bar {
+      width: 100%; -webkit-appearance: none; appearance: none;
+      height: 2px; border-radius: 1px; background: #1e1e1e; outline: none; cursor: pointer;
+    }
+    .mini-prog-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--orange); border: 2px solid #111; }
+    .mini-prog-bar::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); border: 2px solid #111; }
+    .mini-controls { display: flex; align-items: center; gap: 10px; }
+    .mini-ctrl-btn {
+      background: transparent; border: 1.5px solid #2a2a2a; border-radius: 50%;
+      width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #666; transition: border-color .2s, color .2s, transform .1s;
+    }
+    .mini-ctrl-btn:hover { border-color: #555; color: #aaa; }
+    .mini-ctrl-btn:active { transform: scale(0.93); }
+    .mini-play-btn { width: 42px; height: 42px; border: 2px solid rgba(232,160,32,0.7); color: var(--orange); }
+
+    @media (max-width: 900px) {
+      .story-section {
+        grid-template-columns: 1fr;
+        padding: 80px 24px 100px;
+        gap: 26px;
+      }
+      .story-heading { margin-bottom: 10px; letter-spacing: 3px; }
+      .story-typed-text {
+        font-size: clamp(13px, 3.4vw, 15px);
+        line-height: 1.75;
+      }
+      .story-image-reveal {
+        width: min(100%, 430px);
+        justify-self: center;
+      }
+      .mini-player { top: 14px; right: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="main-content" class="visible">
+    <div class="mini-player" id="mini-player">
+      <div class="mini-popup" id="mini-popup">
+        <div class="mini-popup-cover">
+          <img id="mini-popup-cover-img" src="../planetexplosion.jpeg" alt="" />
+        </div>
+        <div class="mini-popup-title" id="mini-popup-title">-</div>
+        <div class="mini-popup-artist" id="mini-popup-artist">-</div>
+        <div class="mini-prog-wrap">
+          <div class="mini-prog-row">
+            <span class="mini-prog-time" id="mini-time-cur">0:00</span>
+            <span class="mini-prog-time" id="mini-time-dur">0:00</span>
+          </div>
+          <input type="range" class="mini-prog-bar" id="mini-prog-bar" min="0" max="100" value="0" step="0.1" />
+        </div>
+        <div class="mini-controls">
+          <button class="mini-ctrl-btn" id="mini-btn-prev" aria-label="Previous track">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/></svg>
+          </button>
+          <button class="mini-ctrl-btn mini-play-btn" id="mini-btn-play" aria-label="Play or pause">
+            <svg id="mini-icon-play" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg id="mini-icon-pause" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button class="mini-ctrl-btn" id="mini-btn-next" aria-label="Next track">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="mini-vinyl-disc" id="mini-vinyl" aria-label="Open mini player">
+        <div class="mini-vinyl-art"><img id="mini-cover" src="../finewhine.jpeg" alt="" /></div>
+        <div class="mini-spindle"></div>
+      </div>
+    </div>
+
+    <section id="story-section" class="story-section bg-grid">
+      <h2 class="story-heading">Lost Romance</h2>
+      <div id="story-typed-text" class="story-typed-text"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal" class="story-image-reveal">
+        <div class="story-image-card">
+          <img id="story-img" src="constantinebarscene.jpeg" alt="Smoky outback pub with pool table under dim fluorescent light" />
+          <p class="story-img-label">Outback Dive</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="story-section-2" class="story-section bg-grid">
+      <div id="story-typed-text-2" class="story-typed-text"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-2" class="story-image-reveal">
+        <div class="story-image-card">
+          <img id="story-img-2" src="deadman.jpeg" alt="John and Deadman plotting in a dim pub corner" />
+          <p class="story-img-label">DEADMAN</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="story-section-3" class="story-section bg-grid">
+      <div id="story-typed-text-3" class="story-typed-text"><span class="about-cursor"></span></div>
+    </section>
+
+    <section id="story-section-4" class="story-section bg-grid">
+      <div id="story-typed-text-4" class="story-typed-text"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-4" class="story-image-reveal">
+        <div class="story-image-card">
+          <img id="story-img-4" src="constantinezatanna.jpeg" alt="Tender close moment in golden light" />
+          <p class="story-img-label">False Grace</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="story-section-5" class="story-section bg-grid">
+      <div id="story-typed-text-5" class="story-typed-text"><span class="about-cursor"></span></div>
+    </section>
+
+    <section id="story-section-6" class="story-section bg-grid">
+      <div id="story-typed-text-6" class="story-typed-text"><span class="about-cursor"></span></div>
+      <div id="story-image-reveal-6" class="story-image-reveal">
+        <div class="story-image-card">
+          <img id="story-img-6" src="houseofmystery.jpeg" alt="House of Mystery forming from pub shadows" />
+          <p class="story-img-label">House Of Mystery</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="story-section-7" class="story-section bg-grid">
+      <div id="story-typed-text-7" class="story-typed-text"><span class="about-cursor"></span></div>
+    </section>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+  <script>
+    const TRACKS = [
+      { id: 1, title: "seigfried", artist: "frank ocean", src: "seigfried.mp3", cover: "frankocean.jpeg" },
+      { id: 2, title: "is there someone else?", artist: "the weeknd", src: "../istheresomeonelese.mp3", cover: "../istheresomeonelse.jpeg" },
+      { id: 3, title: "Last Horn", artist: "Odin's Echo", src: "../last-horn.mp3", cover: "../cover-ragnarok-3.jpg" }
+    ];
+
+    const audio = document.getElementById('audio');
+    const miniVinyl = document.getElementById('mini-vinyl');
+    const miniPopup = document.getElementById('mini-popup');
+    const miniCover = document.getElementById('mini-cover');
+    const miniPopupCover = document.getElementById('mini-popup-cover-img');
+    const miniPopupTitle = document.getElementById('mini-popup-title');
+    const miniPopupArtist = document.getElementById('mini-popup-artist');
+    const miniProgBar = document.getElementById('mini-prog-bar');
+    const miniTimeCur = document.getElementById('mini-time-cur');
+    const miniTimeDur = document.getElementById('mini-time-dur');
+    const miniBtnPlay = document.getElementById('mini-btn-play');
+    const miniBtnPrev = document.getElementById('mini-btn-prev');
+    const miniBtnNext = document.getElementById('mini-btn-next');
+    const miniIconPlay = document.getElementById('mini-icon-play');
+    const miniIconPause = document.getElementById('mini-icon-pause');
+
+    let currentTrack = null;
+
+    const fmt = s => !isFinite(s) ? '0:00' : Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+    function setPlaying(isPlaying) {
+      miniIconPlay.style.display = isPlaying ? 'none' : 'block';
+      miniIconPause.style.display = isPlaying ? 'block' : 'none';
+      miniVinyl.classList.toggle('playing', isPlaying);
+    }
+
+    function currentIndex() {
+      return TRACKS.findIndex(t => t.id === currentTrack?.id);
+    }
+
+    function loadTrack(track) {
+      currentTrack = track;
+      miniCover.src = track.cover || '';
+      miniPopupCover.src = track.cover || '';
+      miniCover.alt = track.title;
+      miniPopupTitle.textContent = track.title;
+      miniPopupArtist.textContent = track.artist;
+      miniProgBar.value = 0;
+      miniTimeCur.textContent = '0:00';
+      miniTimeDur.textContent = '0:00';
+      audio.src = track.src;
+      audio.load();
+      audio.addEventListener('canplay', function onCanPlay() {
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.play().catch(() => {});
+      });
+    }
+
+    function startFirstTrackPlayback() {
+      loadTrack(TRACKS[0]);
+      setPlaying(true);
+    }
+
+    miniVinyl.addEventListener('click', () => miniPopup.classList.toggle('open'));
+    miniBtnPlay.addEventListener('click', () => {
+      if (audio.paused) audio.play().catch(() => {});
+      else audio.pause();
+    });
+    miniBtnPrev.addEventListener('click', () => {
+      if (!TRACKS.length) return;
+      const next = (currentIndex() - 1 + TRACKS.length) % TRACKS.length;
+      loadTrack(TRACKS[next]);
+    });
+    miniBtnNext.addEventListener('click', () => {
+      if (!TRACKS.length) return;
+      const next = (currentIndex() + 1) % TRACKS.length;
+      loadTrack(TRACKS[next]);
+    });
+    audio.addEventListener('play', () => setPlaying(true));
+    audio.addEventListener('pause', () => setPlaying(false));
+    audio.addEventListener('loadedmetadata', () => {
+      miniTimeDur.textContent = fmt(audio.duration);
+    });
+    audio.addEventListener('timeupdate', () => {
+      miniTimeCur.textContent = fmt(audio.currentTime);
+      if (audio.duration) miniProgBar.value = (audio.currentTime / audio.duration) * 100;
+    });
+    audio.addEventListener('ended', () => miniBtnNext.click());
+    miniProgBar.addEventListener('input', () => {
+      if (!audio.duration) return;
+      audio.currentTime = (miniProgBar.value / 100) * audio.duration;
+    });
+
+    const STORY_PARAGRAPHS = [
+      "The air in the pub was thick enough to chew a heavy blend of stale lager, cheap tobacco, and the humid, salty tang of the Australian coast. It was a proper outback dive, the kind of place where the wood of the bar was stained by decades of spilled spirits and broken dreams. In the center of the room, a rusted pool table sat under a flickering fluorescent light, its green felt torn like a scarred landscape, while the rhythmic clack of the balls provided the heartbeat of the room.",
+      "John sat in the furthest, dimmest corner, his trench coat bunched around him like a molting skin. To the drunk shearers and locals at the bar, he looked like just another derelict whispering to the bottom of his glass. But John wasn't alone."
+    ];
+    const STORY_PARAGRAPHS_2 = [
+      "\"We get the Seed of the first Garden  from the Sanctum, we use the House to bridge the gap to the Pit,\" John muttered, his voice barely a rasp. \"The Seed regrows your meat, Boston. You get your life back, and I get my girl. Everybody wins..\"",
+      "\"Nothing’s ever simple with you, John,\" whispered the air beside him. Boston Brand was there, invisible to the breathing world, hovering like a cold pocket of air. Deadman has been dead for decades now, his soul trapped in purgatory, neither hell or heaven claims him and so he roams the earth invisible to all but a few."
+    ];
+    const STORY_PARAGRAPHS_3 = [
+      "\"You’re talking about robbing the Sorcerer Supreme and high-fiving a Demon King. This is suicide John!\"",
+      "John didn't answer. He just pulled out his wallet and stared at the faded photo of Zatanna, a small, tragic smile playing on his lips.",
+      "\"She used to do this thing, Boston,\" John muttered, his eyes misty. \"She’d recite the menu at the chippy backward just to see the look on the cashier's face. She had this spark, mate. Like the sun had been caught in a bottle and she was the only one with the cork.\"",
+      "Beside him, Boston sighed a sound like wind through dry leaves. \"She was the best of us, John. But you gotta stop living in the past. We're here for a reason. You gotta remember that she’s ….\"",
+      "\"John?\"",
+      "The voice cut through the air like a silver bell. John went bone-white.",
+      "The world around him didn't just go quiet; it went void. The rowdy laughter of the Englishmen in the pub, the clack of the pool balls, and even Boston’s frantic warnings were suddenly muffled, as if John had been plunged into deep water.",
+      "Standing by the swinging wood doors, bathed in a light that shouldn't exist in a place this filthy, was Zatanna. Standing by the swinging wood doors was a woman who seemed to carry her own moonlight. She was ethereal, a sharp, breathtaking contrast to the sawdust and grease of the outback dive. Zatanna didn’t just walk into the room; she manifested, her presence pulling the very molecules of the air toward her.",
+      "She was mesmerizing. Her hair was a river of midnight silk, and her skin had the luminous, translucent quality of fine porcelain held up to a flame. Every movement she made was a slow-motion grace, a rhythmic sway that made the rowdy bar patrons feel like blurred, unimportant static in the background of a masterpiece. To look at her was to feel a physical ache in the chest, the kind of beauty that felt like a secret the rest of the world wasn't supposed to know.",
+      "John rose from his seat, his whiskey glass slipping from his numb fingers. It hit the floor, but he didn't hear it shatter. He didn't hear the sudden, haunting silence that swallowed the room.",
+      "\"Zee?\" he breathed, his voice trembling with years worth of unspoken prayers.",
+      "She smiled, and the dim, flickering orange lights of the pub seemed to ignite into gold. It was a look of pure, concentrated warmth, a gaze that promised there were no demons, no debts, and no darkness left in the world. She held out a hand, her fingers slender and pale, beckoning him into a space where time simply ceased to function.",
+      "They met in the center of the room, beneath the humming fluorescent light of the pool table. John reached out, his hands shaking as he touched her waist. She felt like silk and sunshine. She felt like the only real thing he had ever touched.",
+      "As they began to sway, the grimy walls of the pub seemed to melt away into a soft, romantic blur. The smell of stale beer was replaced by the scent of wild jasmine and old leather-bound books. John closed his eyes, burying his face in the crook of her neck, letting the sheer, impossible beauty of her drown out every sin he had ever committed."
+    ];
+    const STORY_PARAGRAPHS_4 = [
+      "\"I've got you, John,\" she whispered, her voice a melodic hum against his ear. \"Don't ever look away. Just stay right here, in the light.\" and for a heartbeat, the King of Con-men believed her. He pressed his face closer, desperate to lose himself in the curve of her smile.  A kiss that tasted of grace, a single, holy breath that washed the world clean."
+    ];
+    const STORY_PARAGRAPHS_5 = [
+      "But as he pulled back, a cold, metallic tang prickled his tongue. It was a sharp, biting residue that tasted of funeral earth and stagnant water.",
+      "\"Zee?\" John stammered, wiping his mouth with the back of his hand. \"What’s that... that silver taste?\"",
+      "She didn't answer. She simply smiled at a slow, hypnotic curve of the lips and leaned in again. Her second kiss was deeper, a heavy, velvet weight that seemed to numb the edges of his brain, quieting the frantic alarm bells screaming in the back of his mind.",
+      "He pulled away once more, gasping for air, and looked at the face he had spent three years dreaming of. For a terrifying flash, the light died. Her skin turned a bruised, papery white; her eyes became hollow, lightless pits of grey, and her jaw sagged with the heavy stillness of the grave. It was the face of a woman who had been cold for a long time.",
+      "Then, in a blink, she was beautiful again. Radiant. Whole.",
+      "\"Wait,\" John said, his voice cracking as he looked around the shifting shadows of the pub. \"Boston? Boston, where are you?\"",
+      "He looked toward the bar stool where his friend had been sitting just a minute ago. He wanted to show her he wanted to introduce the ghost to the goddess. But the stool was empty. There was no Boston Brand. There was no one at the pool table.",
+      "There was only John, Zatanna, and the eyes.",
+      "From the dark corners of the pub, from the cracks in the floorboards and the gaps between the liquor bottles, a hundred unblinking eyes were watching them. They weren't the eyes of drunk Australians. They were cold, predatory, and ancient.",
+      "\"Where’d he go, Zee? He was right here,\" John whispered, his hand drifting toward his pocket, his instinct finally overriding the dream.",
+      "Something didn't feel right. The air was too still, the Jasmine scent was becoming cloying, and the beautiful woman in front of him wasn't blinking. She was just watching him, waiting for him to close his eyes and sink back into the lie.",
+      "\"WAKE UP, YOU STUPID BASTARD!\"",
+      "The scream didn't come from the bar. It tore through the center of the kiss, a jagged, masculine roar that ripped the velvet silence of the pub to shreds.",
+      "John’s eyes snapped open, and the world buckled. The warmth vanished. The smell of jasmine turned into the stench of formaldehyde and wet soil. He wasn't holding a goddess. He was clutching a stiff, heavy weight that felt like ice wrapped in scorched silk.",
+      "He stumbled back, his boots hitting cold, rotting floorboards instead of sawdust. The beautiful, ethereal Zatanna was gone. In her place stood her lifeless corpse, her skin the color of a bruised winter sky. Her jaw hung open, and the Lazarus Wafer sat on her tongue like a cursed silver coin, glowing with a frantic, stuttering light. Zatanna's been dead for 3 years.",
+      "Inside that shell, the spirit of Deadman was thrashing, his translucent white energy flickering behind her dead eyes like a trapped lightning bolt. Deadman trying to control a lifeless corpse.",
+      "\"John! Look at me!\" Boston’s voice rasped out of Zatanna’s throat, wet and broken. \"It’s a trap! The House is feeding on your head!\""
+    ];
+    const STORY_PARAGRAPHS_6 = [
+      "John looked around, and his heart turned to lead. The London pub was gone. The pool table, the neon lights, the rowdy crowd all of it was being sucked into the shadows like ink down a drain. The walls bled black, shifting and groaning as they reformed into the jagged, impossible geometry of the House of Mystery.",
+      "The \"eyes\" that had been watching him from the corners weren't demons; they were the knots in the sentient wood of the House, staring at him with ancient, wooden spite."
+    ];
+    const STORY_PARAGRAPHS_7 = [
+      "\"I... I was just with her,\" John whispered, his hands shaking as he looked at the grey, unmoving face of the woman he loved. \"We were dancing, Boston. It was real.\"",
+      "\"It was a sedative, John!\" Boston lunged forward, the corpse’s movements jerky and unnatural. \"The House knows what you’re trying to do. It’s trying to keep you in a dream until Strange arrives to pick up the pieces! We’re not in Britain, mate. We’re in the basement, and you’re losing your mind!\"",
+      "John looked at the corpse. The silver residue was still on his lips, not the taste of a kiss, but the metallic rot of the grave. The Denial shattered, falling away like a broken fever.",
+      "\"Right,\" John rasped, wiping his mouth until it bled. He reached into his coat and felt the hard, cold lump of the Seed of Gaia. \". One last piece..\""
+    ];
+
+    const storySection = document.getElementById('story-section');
+    const storyTypedText = document.getElementById('story-typed-text');
+    const storyImageReveal = document.getElementById('story-image-reveal');
+    const storySection2 = document.getElementById('story-section-2');
+    const storyTypedText2 = document.getElementById('story-typed-text-2');
+    const storyImageReveal2 = document.getElementById('story-image-reveal-2');
+    const storySection3 = document.getElementById('story-section-3');
+    const storyTypedText3 = document.getElementById('story-typed-text-3');
+    const storySection4 = document.getElementById('story-section-4');
+    const storyTypedText4 = document.getElementById('story-typed-text-4');
+    const storyImageReveal4 = document.getElementById('story-image-reveal-4');
+    const storySection5 = document.getElementById('story-section-5');
+    const storyTypedText5 = document.getElementById('story-typed-text-5');
+    const storySection6 = document.getElementById('story-section-6');
+    const storyTypedText6 = document.getElementById('story-typed-text-6');
+    const storyImageReveal6 = document.getElementById('story-image-reveal-6');
+    const storySection7 = document.getElementById('story-section-7');
+    const storyTypedText7 = document.getElementById('story-typed-text-7');
+    const TYPE_DELAY = 14;
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const escapeHtml = str => str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    async function typeStoryParagraph(container, text, isLastParagraph) {
+      const p = document.createElement('p');
+      p.className = 'typed-paragraph';
+      container.appendChild(p);
+
+      for (let i = 0; i <= text.length; i++) {
+        const typed = escapeHtml(text.slice(0, i));
+        p.innerHTML = isLastParagraph ? `${typed}<span class="about-cursor"></span>` : typed;
+        await wait(TYPE_DELAY);
+      }
+
+      if (!isLastParagraph) p.innerHTML = escapeHtml(text);
+    }
+
+    function reserveTypedHeight(targetEl, paragraphs) {
+      targetEl.innerHTML = '';
+      paragraphs.forEach(text => {
+        const p = document.createElement('p');
+        p.className = 'typed-paragraph';
+        p.textContent = text;
+        targetEl.appendChild(p);
+      });
+      const reservedHeight = targetEl.scrollHeight;
+      targetEl.innerHTML = '';
+      targetEl.style.minHeight = `${reservedHeight}px`;
+    }
+
+    async function runStoryTypewriter(block) {
+      if (!block || !block.textEl) return;
+      block.textEl.innerHTML = '';
+      for (let i = 0; i < block.paragraphs.length; i++) {
+        const isLast = i === block.paragraphs.length - 1;
+        await typeStoryParagraph(block.textEl, block.paragraphs[i], isLast);
+        if (!isLast) await wait(260);
+      }
+
+      if (block.revealEl) {
+        await wait(280);
+        block.revealEl.classList.add('visible');
+      }
+    }
+
+    const STORY_BLOCKS = [
+      { sectionEl: storySection, textEl: storyTypedText, revealEl: storyImageReveal, paragraphs: STORY_PARAGRAPHS },
+      { sectionEl: storySection2, textEl: storyTypedText2, revealEl: storyImageReveal2, paragraphs: STORY_PARAGRAPHS_2 },
+      { sectionEl: storySection3, textEl: storyTypedText3, revealEl: null, paragraphs: STORY_PARAGRAPHS_3 },
+      { sectionEl: storySection4, textEl: storyTypedText4, revealEl: storyImageReveal4, paragraphs: STORY_PARAGRAPHS_4 },
+      { sectionEl: storySection5, textEl: storyTypedText5, revealEl: null, paragraphs: STORY_PARAGRAPHS_5 },
+      { sectionEl: storySection6, textEl: storyTypedText6, revealEl: storyImageReveal6, paragraphs: STORY_PARAGRAPHS_6 },
+      { sectionEl: storySection7, textEl: storyTypedText7, revealEl: null, paragraphs: STORY_PARAGRAPHS_7 }
+    ];
+    const startedBlocks = new WeakSet();
+    STORY_BLOCKS.forEach(block => reserveTypedHeight(block.textEl, block.paragraphs));
+
+    function startBlockOnce(block) {
+      if (!block || startedBlocks.has(block)) return;
+      startedBlocks.add(block);
+      runStoryTypewriter(block);
+    }
+
+    const storyObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const idx = Number(entry.target.dataset.storyBlock);
+        if (!Number.isNaN(idx) && STORY_BLOCKS[idx]) startBlockOnce(STORY_BLOCKS[idx]);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -48px 0px' });
+
+    STORY_BLOCKS.forEach((block, idx) => {
+      if (!block.sectionEl) return;
+      block.sectionEl.dataset.storyBlock = String(idx);
+      storyObserver.observe(block.sectionEl);
+    });
+
+    if (storySection && storySection.getBoundingClientRect().top < window.innerHeight * 0.85) {
+      startBlockOnce(STORY_BLOCKS[0]);
+    }
+
+    startFirstTrackPlayback();
+    window.addEventListener('pageshow', startFirstTrackPlayback);
+  </script>
+</body>
+</html>
